@@ -16,3 +16,4 @@ $router->get('/', function () use ($router) {
 });
 
 $router->get('user/{username}', 'UserController@show');
+$router->post('user', 'UserController@store');
