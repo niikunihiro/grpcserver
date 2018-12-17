@@ -61,6 +61,24 @@ func (us UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.U
 func (us UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
 	var user User
 
+	result, err := Db().Exec(
+		"INSERT INTO users (username, email, birth_date) VALUES(?, ?, ?)",
+		req.Username,
+		req.Email,
+		req.BirthDate,
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	err = Db().Get(&user, "SELECT user_id, username, email, birth_date FROM users WHERE user_id = ?", id)
+	if err != nil {
+		panic(err.Error())
+	}
 	return &pb.User{
 		UserId:    user.ID,
 		Username:  user.Username,
