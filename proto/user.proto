@@ -1,0 +1,41 @@
+syntax = "proto3";
+package grpcserver;
+
+option go_package = "github.com/niikunihiro/proto";
+
+import "google/protobuf/empty.proto";
+
+service UserApi {
+    rpc GetUser (GetUserRequest) returns (User) {}
+    rpc CreateUser (CreateUserRequest) returns (User) {}
+    rpc UpdateUser (UpdateUserRequest) returns (User) {}
+    rpc DeleteUser (DeleteUserRequest) returns (google.protobuf.Empty) {}
+}
+
+message GetUserRequest {
+    string username = 1;
+}
+
+message CreateUserRequest {
+    string username = 1;
+    string email = 2;
+    string birth_date = 3;
+}
+
+message UpdateUserRequest {
+    uint32 user_id = 1;
+    string username = 2;
+    string email = 3;
+    string birth_date = 4;
+}
+
+message DeleteUserRequest {
+    string username = 1;
+}
+
+message User {
+    uint32 user_id = 1;
+    string username = 2;
+    string email = 3;
+    string birth_date = 4;
+}
