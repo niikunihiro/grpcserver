@@ -30,7 +30,7 @@ class UserController extends Controller
         /** @var \Grpcserver\User $reply */
         list($reply, $status) = $this->client->GetUser($request)->wait();
 
-        return json_encode([
+        return response()->json([
             'user_id' => $reply->getUserId(),
             'username' => $reply->getUserName(),
             'email' => $reply->getEmail(),
@@ -51,7 +51,8 @@ class UserController extends Controller
 
         /** @var \Grpcserver\User $reply */
         list($reply, $status) = $this->client->CreateUser($userRequest)->wait();
-        return json_encode([
+
+        return response()->json([
             'user_id' => $reply->getUserId(),
             'username' => $reply->getUserName(),
             'email' => $reply->getEmail(),
