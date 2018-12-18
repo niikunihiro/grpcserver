@@ -16,18 +16,15 @@ class UserController extends Controller
     /**
      * Create a new controller instance.
      *
-     * @return void
+     * @param UserApiClient $apiClient
      */
-    public function __construct()
+    public function __construct(UserApiClient $apiClient)
     {
-        $this->client = new UserApiClient('host.docker.internal:18686', [
-            'credentials' => ChannelCredentials::createInsecure(),
-        ]);
+        $this->client = $apiClient;
     }
 
-    public function show($username)
+    public function show(GetUserRequest $request, $username)
     {
-        $request = new GetUserRequest;
         $request->setUsername($username);
 
         /** @var \Grpcserver\User $reply */
@@ -42,12 +39,12 @@ class UserController extends Controller
     }
 
     /**
+     * @param CreateUserRequest $userRequest
      * @param Request $request
      * @return array
      */
-    public function store(Request $request)
+    public function store(CreateUserRequest $userRequest, Request $request)
     {
-        $userRequest = new CreateUserRequest;
         $userRequest->setUsername($request->input('username'));
         $userRequest->setEmail($request->input('email'));
         $userRequest->setBirthDate($request->input('birth_date'));
