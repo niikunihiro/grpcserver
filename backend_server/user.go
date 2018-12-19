@@ -72,6 +72,22 @@ func (us UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 func (us UserServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.User, error) {
 	var user User
 
+	_, err := us.db.Exec(
+		"UPDATE users SET username = ?, email = ?, birth_date = ? WHERE user_id = ?",
+		req.Username,
+		req.Email,
+		req.BirthDate,
+		req.UserId,
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	err = us.db.Get(&user, "SELECT user_id, username, email, birth_date FROM users WHERE user_id = ?", req.UserId)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	return &pb.User{
 		UserId:    user.ID,
 		Username:  user.Username,
