@@ -3,35 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/empty"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/jmoiron/sqlx"
+	pb "github.com/niikunihiro/grpcserver/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
-	pb "github.com/niikunihiro/grpcserver/proto"
-	"sync"
 )
-
-var instanceMySql *sqlx.DB
-var onceMySQL sync.Once
-
-func Db() *sqlx.DB {
-	onceMySQL.Do(func() {
-		initializeMySql()
-	})
-	return instanceMySql
-}
-
-func initializeMySql() {
-	var err error
-	instanceMySql, err = sqlx.Connect("mysql", "root:musclebeauty!@tcp(127.0.0.1:13306)/grpcserver")
-	if err != nil {
-		fmt.Println("Failed to run mysql: ", err)
-		log.Fatalln("Failed to run mysql: ", err)
-	}
-}
 
 type User struct {
 	ID        uint32 `db:"user_id"`
@@ -40,12 +20,14 @@ type User struct {
 	BirthDate string `db:"birth_date"`
 }
 
-type UserServer struct{}
+type UserServer struct {
+	db *sqlx.DB
+}
 
 func (us UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
 	var user User
 
-	err := Db().Get(&user, "SELECT user_id, username, email, birth_date FROM users WHERE username = ?", req.Username)
+	err := us.db.Get(&user, "SELECT user_id, username, email, birth_date FROM users WHERE username = ?", req.Username)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -61,7 +43,7 @@ func (us UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.U
 func (us UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
 	var user User
 
-	result, err := Db().Exec(
+	result, err := us.db.Exec(
 		"INSERT INTO users (username, email, birth_date) VALUES(?, ?, ?)",
 		req.Username,
 		req.Email,
@@ -75,7 +57,7 @@ func (us UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 		panic(err.Error())
 	}
 
-	err = Db().Get(&user, "SELECT user_id, username, email, birth_date FROM users WHERE user_id = ?", id)
+	err = us.db.Get(&user, "SELECT user_id, username, email, birth_date FROM users WHERE user_id = ?", id)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -109,8 +91,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen %v", err)
 	}
+
+	db, err := sqlx.Connect("mysql", "root:musclebeauty!@tcp(127.0.0.1:13306)/grpcserver")
+	if err != nil {
+		fmt.Println("Failed to run mysql: ", err)
+		log.Fatalln("Failed to run mysql: ", err)
+	}
+
 	s := grpc.NewServer()
-	pb.RegisterUserApiServer(s, &UserServer{})
+	pb.RegisterUserApiServer(s, &UserServer{db: db})
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
